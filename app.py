@@ -9,6 +9,7 @@ import re
 import yaml
 import pdb
 import hashlib
+import asyncio
 from typing import List, Any
 from pathlib import Path
 
@@ -56,7 +57,7 @@ class PDFManager:
         self.pdf_paths = pdf_paths
         self.project_root = Path(__file__).parent
 
-    def load_documents(self):
+    async def load_documents(self):
         documents = []
         
         for pdf in self.pdf_paths:
@@ -68,7 +69,8 @@ class PDFManager:
         
             try:
                 loader = PyPDFLoader(str(pdf_path))
-                pdf_docs = loader.load()
+
+                pdf_docs = await asyncio.to_thread(loader.load)
                 documents.extend(pdf_docs)
 
             except Exception as e:
@@ -87,7 +89,7 @@ def load_embeddings():
     return embedding_model
 
 
-def load_pdf_documents():
+async def load_pdf_documents():
     config = ConfigManager()
     pdf_paths = config.get("data", "pdf_paths", [])
     
@@ -96,12 +98,40 @@ def load_pdf_documents():
         return []
     
     pdf_manager = PDFManager(pdf_paths)
-    return pdf_manager.load_documents()
+    return await pdf_manager.load_documents()
+
 
 def clean_duplicates(text):
     # Replace 2+ consecutive same letters with just one
     return re.sub(r'(.)\1+', r'\1', text)
 
+
+def hash_text(text:str)-> str:
+    hash_text =hashlib.sha256(text.encode()).hexdigest()
+
+    return(hash_text)
+
+def split_documents_into_chunks(documents: List[Any]) -> List[str]:
+
+    config = ConfigManager()
+    chunk_size = config.get("rag", "chunk_size", 1000)
+    chunk_overlap = config.get("rag", "chunk_overlap", 200)
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        separators=["\n\n", "\n"],
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        length_function=len
+    )
+
+    texts= ""
+    for doc in documents:
+            texts += doc.page_content
+
+    clean_text= clean_duplicates(texts)
+    chunks = text_splitter.split_text(clean_text)
+    
+    return chunks
 
 
 if __name__== '__main__':
