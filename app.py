@@ -114,8 +114,8 @@ def hash_text(text:str)-> str:
 def split_documents_into_chunks(documents: List[Any]) -> List[str]:
 
     config = ConfigManager()
-    chunk_size = config.get("rag", "chunk_size", 1000)
-    chunk_overlap = config.get("rag", "chunk_overlap", 200)
+    chunk_size = config.get("rag", "chunk_size", 768)
+    chunk_overlap = config.get("rag", "chunk_overlap", 256)
 
     text_splitter = RecursiveCharacterTextSplitter(
         separators=["\n\n", "\n"],
@@ -275,17 +275,12 @@ async def main():
     LLM_CONTEXT_TURNS = config.get('chat', 'history_limit', 6) or 6
     
     st.set_page_config(
-        page_title=config.get('app', 'page_title', 'CV Assistant'),
+        page_title=config.get('app', 'page_title', 'Mashhad Airport AI Assistant'),
         page_icon=config.get('app', 'page_icon', ':books:'),
         layout=config.get('app', 'layout', 'centered')
     )
     
     st.header(config.get('app', 'header', ''))
-    
-    # Sidebar cache clear option
-    if st.sidebar.checkbox("🔄 Clear Cache"):
-        st.cache_resource.clear()
-        st.sidebar.success("Cache cleared! Please refresh.")
 
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
@@ -295,7 +290,7 @@ async def main():
         st.session_state.chat_history.append(AIMessage(content=welcome_message))
         st.session_state.welcome_added = True
 
-    user_query = st.chat_input("Ask me Hossein's CV...", key='question')
+    user_query = st.chat_input("سوالت را اینجا بنویس", key='question')
 
 
     if not user_query:

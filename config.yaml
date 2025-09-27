@@ -1,14 +1,14 @@
 app:
-  title: "Mashhad Airport Assistant"
-  page_icon: "📚"
+  page_title: "Mashhad Airport Assistant"
+  page_icon: "✈️"
   layout: "centered"
   header: "Mashhad Airport Assistant"
   welcome_message: "سلام 👋، من می تونم به سوالات شما درخصوص فروگاه مشهد و همینطور منشور حقوق مسافر پاسخ بدم. چه سوالی دارید؟ "
 
 data:
   pdf_paths:
-    - "data/CV.pdf"
-    - "data/Cover_Letter.pdf"
+    - "data/CAD.pdf"
+    - "data/Mashhad-airport.pdf"
 
 llm:
   model_name: "models/gemini-2.5-flash"
