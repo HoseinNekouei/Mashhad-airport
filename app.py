@@ -87,6 +87,23 @@ def load_embeddings():
     return embedding_model
 
 
+def load_pdf_documents():
+    config = ConfigManager()
+    pdf_paths = config.get("data", "pdf_paths", [])
+    
+    if not pdf_paths:
+        st.warning("No PDF files provided in config.")
+        return []
+    
+    pdf_manager = PDFManager(pdf_paths)
+    return pdf_manager.load_documents()
+
+def clean_duplicates(text):
+    # Replace 2+ consecutive same letters with just one
+    return re.sub(r'(.)\1+', r'\1', text)
+
+
+
 if __name__== '__main__':
     print(load_embeddings())
 
