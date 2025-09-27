@@ -24,7 +24,3 @@ rag:
 
 chat:
   history_limit: 6
-
-debug:
-  clear_cache: false         # set true to clear st.cache_resource
-  verbose: true              # show extra logs in Streamlit

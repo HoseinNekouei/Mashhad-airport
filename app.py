@@ -256,8 +256,72 @@ async def get_response(query, chat_history):
         return "Sorry, I encountered an error while generating the response."
 
 
+def display_chat_history(chat_history):
+    
+    for message in chat_history:
 
-if __name__== '__main__':
-    print(load_embeddings())
+        role = 'human' if isinstance(message, HumanMessage) else 'assistant'
+        
+        avatar = r'avatar/no_name.png' if role == 'human' else r'avatar/ELIZA.png'
+        
+        st.chat_message(role, avatar=avatar).markdown(message.content)
+
+
+async def main():
+    
+    load_dotenv()
+    config = ConfigManager()
+
+    LLM_CONTEXT_TURNS = config.get('chat', 'history_limit', 6) or 6
+    
+    st.set_page_config(
+        page_title=config.get('app', 'page_title', 'CV Assistant'),
+        page_icon=config.get('app', 'page_icon', ':books:'),
+        layout=config.get('app', 'layout', 'centered')
+    )
+    
+    st.header(config.get('app', 'header', ''))
+    
+    # Sidebar cache clear option
+    if st.sidebar.checkbox("🔄 Clear Cache"):
+        st.cache_resource.clear()
+        st.sidebar.success("Cache cleared! Please refresh.")
+
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+
+    if 'welcome_added' not in st.session_state:
+        welcome_message = config.get('app', 'welcome_message', '') or "Hello, How can I help you?"
+        st.session_state.chat_history.append(AIMessage(content=welcome_message))
+        st.session_state.welcome_added = True
+
+    user_query = st.chat_input("Ask me Hossein's CV...", key='question')
+
+
+    if not user_query:
+        display_chat_history(st.session_state.chat_history)
+        return
+    
+    display_chat_history(st.session_state.chat_history)
+    
+    if user_query and user_query.strip():
+    
+        st.session_state.chat_history.append(HumanMessage(content=user_query))
+    
+        st.chat_message('human', avatar=r'avatar/no_name.png').markdown(user_query)
+    
+        chat_history = st.session_state.chat_history[-LLM_CONTEXT_TURNS:]
+    
+        ai_response = await get_response(user_query, chat_history)
+    
+        ai_message = AIMessage(content=ai_response or "Sorry, I have no response.")
+    
+        st.chat_message('assistant', avatar=r'avatar/ELIZA.png').markdown(ai_message.content)
+    
+        st.session_state.chat_history.append(ai_message)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 
