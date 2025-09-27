@@ -84,7 +84,7 @@ def load_embeddings():
     embedding_model_name= config.get('embedding', 'model_name')  
 
     embedding_model = OllamaEmbeddings(
-        model=embedding_model_name)
+        model= 'aligh4699/heydariAI-persian-embeddings')
     
     return embedding_model
 
@@ -194,7 +194,68 @@ class VectorStoreCache:
             raise ValueError('Vecto store not loaded. call create_or_load() first')            
 
         return await asyncio.to_thread(self.collection.similarity_search, query, k=k)
+
+
+# ---------------- RAG RESPONSE ----------------
+async def get_response(query, chat_history):
+
+    documents = await load_pdf_documents()
+
+    if not documents:
+        return "No documents available to provide context."
+
+    text_chunks = split_documents_into_chunks(documents)
+    vector_cache = VectorStoreCache()
+    await vector_cache.load_or_create(text_chunks)
+
+    try:
+        result_docs = await vector_cache.similarity_search(query, k=4)
     
+    except Exception as e:
+        st.error(f"Error during similarity search: {e}")
+        st.stop()
+
+    if not result_docs:
+        st.warning("No relevant content found for your query.")
+        return
+
+    context = "\n\n".join(result_doc.page_content for result_doc in result_docs)
+
+    # Structured answer model prompt
+    template = """
+    You are a helpful AI assistant. Answer the user questions considering the context and the chat history.
+    If you don't know the answer, just say you don't know. Don't try to make up:
+
+    Chat history: {chat_history}
+    User question: {question}
+    Context: {context}
+    """
+
+    prompt = ChatPromptTemplate.from_template(template)
+
+    llm = ChatOllama(
+        model='gemma3:4b',
+        temperature=0.2
+    )
+
+    output_parser= StrOutputParser()
+
+    chain = prompt | llm | output_parser
+
+    try:
+        response = await chain.ainvoke({
+            "chat_history": chat_history,
+            "question": query,
+            "context": context,
+        })
+
+        return response
+
+    except Exception as e:
+        st.error(f"Error generating response: {e}")
+        return "Sorry, I encountered an error while generating the response."
+
+
 
 if __name__== '__main__':
     print(load_embeddings())
